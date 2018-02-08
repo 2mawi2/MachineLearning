@@ -5,25 +5,32 @@ from Adaline.plot_utils import plot_error_function, plot_decision_regions
 
 
 class AdaptiveLinearNeuron:
-    def learn(self, data, learning_rate=0.01, epochs=10):
-        x, y = data
-        self.weights = np.zeros(1 + x.shape[1])
+    def learn(self, data, a=0.01, epochs=10):
+        """
+        Q = sample data
+        E = sum squared error
+        e = error
+        t = signal function (-1 / 1)
+        a = alpha - learning rate
+        """
+        X, t = data
 
-        f_error = []
-        for i in range(epochs):
-            output = self._calc_net_input(x)
-            errors = y - output
-            self.weights[1:] += learning_rate * x.T.dot(errors)
-            self.weights[0] += learning_rate * errors.sum()
-            cost = (errors ** 2).sum() / 2.0
-            f_error.append(cost)
-        return f_error
+        self.w = np.zeros(1 + X.shape[1])  # init all weights to zero
 
-    def _calc_net_input(self, x):
-        return np.dot(x, self.weights[1:]) + self.weights[0]
+        error_function = []
+        for _ in range(epochs):
+            e = t - self.y(X)
+            self.w[1:] += a * X.T.dot(e)
+            self.w[0] += a * e.sum()
+            E = (1 / 2) * (e ** 2).sum()
+            error_function.append(E)
+        return error_function
+
+    def y(self, x):
+        return np.dot(x, self.w[1:]) + self.w[0]
 
     def predict(self, x):
-        return np.where(self._calc_net_input(x) >= 0.0, 1, -1)
+        return np.where(self.y(x) >= 0.0, 1, -1)  # sigma signal function 1 or -1
 
 
 def standardize(x):
@@ -38,15 +45,16 @@ def standardize(x):
     return x_std
 
 
-learning_data = pd.read_csv("learning_data.csv")
+learning_data = pd.read_csv("./learning_data.csv")
 
-Y = learning_data.iloc[0:150, 4].values
-Y = np.where(Y == 'Iris-setosa', -1, 1)  # replace Iris-setosa with 1 else -1
-X = learning_data.iloc[0:150, [0, 2]].values  # take columns at index 0 and 2
-X = standardize(X)
+t = learning_data.iloc[0:150, 4].values
+t = np.where(t == 'Iris-setosa', -1, 1)  # replace Iris-setosa with 1 else -1
+
+Q = learning_data.iloc[0:150, [0, 1]].values  # take columns at index 0 and 2
+# X = standardize(X)
 
 aln = AdaptiveLinearNeuron()
-f_error = aln.learn(data=(X, Y), learning_rate=0.001, epochs=100)
+f_error = aln.learn(data=(Q, t), a=0.0001, epochs=1000)
 
 plot_error_function(f_error)
-plot_decision_regions(X, Y, classifier=aln)
+# plot_decision_regions(X, Q, classifier=aln)
